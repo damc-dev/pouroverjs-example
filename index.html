@@ -11,129 +11,73 @@
     <script src="Zipcodes.js"></script>
     <script src="utils.js"></script>
 
-    <script type="text/html" id="zipcode-list-template">
-        <table>
-          <thead>
-            <tr>
-              <th>State</th>
-              <th>City</th>
-              <th>Zip Code</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% _.each(items, function(item) { %>
-              <tr>
-                <td><%= item.get('state') %></td>
-                <td><%= item.get('primary_city') %></td>
-                <td><%= item.get('zipcode') %></td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
+
+    <script type="text/html" id="state-selector-template">
+        <select id="state-selector">
+          <% _.each(states, function(state) { %>
+                <option value="<%= state %>"><%= state %></option>
+            <% }) %>
+        </select>
     </script>
-
-    <!--<script src="jst.js"></script>-->
-    <script type="text/javascript">
-
-    function filterByState(collection, state) {
-        collection.filters.state.query(state);
-        var state_cids = collection.filters.state.current_query.cids,
-            states = collection.get(state_cids);
-
-        return states;
-    }
-
- /**
-    $( document ).ready(function() {
-
-
-    });
-**/
-    var Zipcodes = Backbone.Model.extend({
-        defaults: {
-            state: 'CA',
-            primary_city: 'Los Angeles',
-            zipcode: '68888',
-        }
-    });
-    (function ($) {
-
-        //console.log(zipcodes);
-
-        state_options = getUniqueValues(zipcodes, "state");
-        //console.log(state_options);
-
-        var collection = new PourOver.Collection(zipcodes);
-        var state_filter = PourOver.makeExactFilter("state", state_options);
-        collection.addFilters([state_filter]);
-        //ne = filterByState(collection, "NE");
-        //console.log(ne);
-
-        collection.filters.state.query("NE");
-        //var state_cids = collection.filters.state.current_query.cids,
-        //    states = collection.get(state_cids);
-
-
-        ZipcodeView = PourOver.View.extend({
-           //template: JST.viewTemplate,
-            initialize:function(){
-                this.selectionFn();
-                this.render();
-            },
-            template: _.template($("#zipcode-list-template").html()),
-            render: function() {
-                console.log("BOOOM");
-                collection.filters.state.query("NE");
-
-                 var state_cids =
-                        collection.filters.state.current_query.cids,
-                     items = collection.get(state_cids);
-                var html = this.template({items:items});
-                console.log(items);
-                $("body").append(output);
-            },
-            selectionFn: function() {
-                var collection = this.collection,
-                    states_dimension =
-                        collection.getCurrentFilteredItems("states");
-                    return collection;
-            }
-        });
-        view = new ZipcodeView("zipcode-list-template", collection);
-
-    })(jQuery);
-        /////////////////////////
-        /**
-        collection.filters.state.query("NE");
-        var ne_cids = collection.filters.state.current_query.cids,
-            ne = collection.get(ne_cids);
-        console.log(ne);
-        **/
-        ////////////////////
-
-
-        //var zipcodes = collection.get(ne_cids);
-
-        //console.log( zipcodes );
-
-        /**
-        var zipcodes = collection.get(neZipcodes.zipcode);
-
-        console.log(zipcodes);
-        **/
-
-    //});
-    </script>
-
-
-
   </head>
   <body>
       <h1>Zipcodes</h1>
-
-      <div id="container" class="content"></div>
+      <div id="search-container">
+          <div id="state-selector-container">
+                Loading Cities..
+          </div>
+      </div>
+      <br>
+      <div class="content">
+      </div>
 
 
   </body>
+
+          <script type="text/javascript">
+
+    (function ($) {
+
+        var state_selector_template = $("#state-selector-template").html(),
+            zipcode_table_template = $("#zipcode-table-template").html();
+
+        var collection = new PourOver.Collection(zipcodes);
+
+        state_options = getUniqueValues(zipcodes, "state");
+
+        // Add states to the select box as options
+        $("#state-selector-container").html( _.template(state_selector_template, {'states': state_options} ) );
+
+        // Add filter to our collection with the unique states as options
+        var state_filter = PourOver.makeExactFilter("state", state_options);
+        collection.addFilters([state_filter]);
+
+        // Create our view
+        ZipcodeView = PourOver.View.extend({
+            selectionFn: function() {
+                var state_query = collection.filters.state.current_query;
+                return state_query;
+            },
+            render: function() {
+                current_items = this.getCurrentItems();
+                $(".content").html(JSON.stringify(current_items));
+                return(this);
+            }
+
+        });
+        var zipcode_view = new ZipcodeView("zipcode_view", collection);
+
+        zipcode_view.render();
+
+        $( "#state-selector").change(function(){
+            var state_selected = $( "#state-selector").val()
+            collection.filters.state.query(state_selected);
+            console.log("now render filtered view");
+            console.log(zipcode_view);
+            zipcode_view.render();
+        });
+
+    })(jQuery);
+    </script>
 
   </html>
